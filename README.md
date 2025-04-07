@@ -446,3 +446,188 @@ a = 'hello'
 b = 'world'
 print(f"{a} {b}") # hello world
 ```
+
+## 3. 调试和性能优化
+### 3.1 定制调试信息
+#### 3.1.1 打印文件名和行号
+借助`sys.exc_info`模块自己捕获异常, 来打印调试者信息, 同时打印当前调试信息.
+```python
+import sys
+
+
+def xprint(msg=''):
+    try:
+        print('to do')
+        raise Exception
+    except:
+        f = sys.exc_info()[2].tb_frame.f_back
+    print('%s[%s]: %s' % (f.f_code.co_filename, str(f.f_lineno), msg))
+
+
+def test_xprint(msg=''):
+    xprint()
+    xprint("%d %s" % (10, "hello"))
+
+test_xprint()
+#to do
+#/Users/.../python-learn/src/p.py[36]: 
+#to do
+#c/Users/.../python-learn/src/p.py[37]: 10 hello
+```
+
+#### 3.1.2 异常时打印函数调用栈
+异常时, Python默认处理方式将中断程序的运行, 有时我们希望程序继续进行. 我们可以通过`try`语句结合`sys.exc_info()`和`traceback`模块抛出异常, 并给出提示信息.
+```python
+import traceback
+import sys
+
+
+def xtry(runstr):
+    ret, status = None, True
+    try:
+        ret = eval(runstr)
+    except:
+        info = traceback.format_exc()
+
+        try:
+            raise Exception
+        except:
+            f = sys.exc_info()[2].tb_frame.f_back
+        print('%s[%s]: %s' % (f.f_code.co_filename, str(f.f_lineno), info))
+        status = False
+    return status, ret
+```
+`xtry()`函数接受一个字符串作为表达式, 与`xprint()`函数类似, 在异常出现时打印文件名和行号, 并且借助`traceback`模块格式化调用栈信息. 同时返回是否出现异常和表达式的结果. `status`为`True`表示可以正常执行, 否则出现异常.
+
+### 3.2 断言和测试框架
+#### 3.2.1 assert语句
+`0`和`False`是等价的, `1`和`True`是等价的. 当表达式为假时抛出异常.
+
+
+断言语句assert在表达式为假时抛出断言异常语句`AssertionError`并终止程序执行. 这在调试和测试代码时非常有用.
+```python
+assert isinstance('str', str)
+assert 1 == 2
+# assert 0
+# assert False
+```
+断言语句还支持一个格式化字符串参数, 以逗号区分, 用于提供更明确的断言信息.
+```python
+oct_num = -1
+assert oct_num in range(10), 'Oct number must be in (%d - %d)' % (0, 9)
+```
+专门的测试框架通常工具通常会对Python自带的断言功能进行扩展, 已提供更强大的测试和诊断功能.
+
+#### 3.2.2 单元测试模块 unittest
+单元测试主要针对最基础的代码可测单元进行测试, 比如一个表达式, 一个变量值的合法性, 一个函数的入参和出参规格直至一个模块的功能. 著名的极限编程中的测试驱动开发(TDD: Test-Driven Development)就是以单元测试为基础的开发方式, 单元测试代码在编写功能代码时同时进行, 每次对代码的增删和缺陷修复都要进行单元测试, 以保证代码是符合预期的. 这很像在修路的同时, 同时修筑了足够高的防护栏, 而在赛车选手变换各类驾驶技巧时, 不会冲出赛道.
+
+
+可以这样说, 只要单元测试没有漏洞, 编码者就有底气说问题已经彻底修复了.
+
+##### 3.2.2.1 unittest测试用例
+Python自带单元测试框架`unittest`, 它将测试用例定义为`TestCase`类. 编写单元测试时, 首先需要编写一个测试类, 并继承`unittest.TestCase`, 类中的方法必须以`test`开头:
+```python
+import unittest
+
+
+class test_suit1(unittest.TestSuite):
+    def test1(self):
+        """test suit 2""" # 测试用例描述, 同用例标题一并显示测试报告里
+        self.assertEqual(1, 1) # 测试用例断言, 期望`1 == 1`, 否则抛出异常
+```
+测试结果的第一行给出所有测试用例的结果, `.`和 `F` 分别表示测试通过或失败, 每一个测试用例对应一个字符.
+
+
+接着给出出错所用例的类名和描述, 并附上对应出错的文件和行号等信息. 最后给出总的运行用例数和测试耗时.
+
+
+上面的示例直接通过`unittest.main()`函数运行, 也可以在命令中调用`unittest`模块, 注意要注释掉`unittest.main()`
+```shell
+python3 -m unittest unit_sample.py
+```
+`unittest`目前支持如下断言函数:
+
+| 名称                          | 等价                     |
+|-----------------------------|------------------------|
+| `assertEqual(a, b)`         | `a == b`               |
+| `assertTrue(x)`             | `bool(x)` is `True`    |
+| `assertFalse(x)`            | `bool(x)` is `False`   |
+| `assertIs(a, b)`            | `a` is `b`             |
+| `assertIsNot(a, b)`         | `a` is not `b`         |
+| `assertIsNone(x)`           | `x` is `None`          |
+| `assertIsNotNone(x)`        | `x` is not `None`      |
+| `assertIn(a, b)`            | `a in b`               |
+| `assertNotIn(a, b)`         | `a not in b`           |
+| `assertIsInstance(a, b)`    | `isinstance(a, b)`     |
+| `assertNotIsInstance(a, b)` | `not isinstance(a, b)` |
+
+## 4. 字符串处理
+字符串(`str`)是Python中最常用的数据类型, 可以使用单引号或双引号来创建字符串. 注意:
+- Python不支持单字符类型(对应C语言中的`char`), 单字符在Python中也是字符串类型.
+- 字符串是不可变类型, 即无法直接修改字符串的某一索引对应的字符, 需要转换为列表处理. 可以认为字符串是特殊元组类型.
+### 4.1 创建字符串变量
+#### 4.1.1 直接赋值创建字符串
+Python中通过各类引号(**单引号**、**双引号**和**三引号**)标识字符串.
+```python
+str0 = 'hello'
+str1 = "hello"
+str2 = '''hello'''
+str3 = """hello"""
+
+# 多行
+str4 = "hello"\
+" world"
+str5 = """hello\
+ world"""
+
+for i in range(6):
+    print(eval('str' + str(i)))
+```
+
+#### 4.1.2 由字符串组合生成新字符串
+- `+`运算符实现字符串的拼接
+```python
+str0 = "Name:"
+str1 = "john"
+str2 = str0 + ' ' + str1
+str3 = 'Age:' + ' ' + str(18)
+```
+- `*`运算符实现字符串重复
+```python
+str0 = '~' * 10
+```
+操作符必须作用在`str`类型上, 如果为其他类型必须使用`str()`函数进行转换, 例如这里的`str(18)`
+
+
+新字符串可以通过**字符串合并**, **转换**, 切片, 分割和替换等方式得到.
+
+#### 4.1.3 复制字符换
+复制字符串是护理字符串的常用操作, 通过切片实现.
+```python
+str0 = ["0123456789"]
+str1 = str0[:]
+```
+
+#### 4.1.4 其他类型转换为字符串
+`str()`内建函数可以将多种其他数据类型转化为字符串.
+```python
+print(str(1)) # 1
+print(str(1.0)) # 1.0
+print(str(1+1j)) # (1+1j)
+print(str(['12', 'anc'])) # [12, 'abc']
+print(str((12, 'abc'))) # (12, 'abc')
+print(str({'Name': 'John', 'Age': '18'})) # {'Name': 'John', 'Age': '18'}
+```
+可以注意到, 将复杂数据类型转化为字符串时会保留其语法格式, 若要进行个细致的操作, 需要相应函数帮助, 比如`str.format()`, 它们提供了异常强大的转换功能.
+
+### 4.2 特殊字符的转义处理
+
+
+
+
+
+
+
+
+
+
