@@ -621,13 +621,668 @@ print(str({'Name': 'John', 'Age': '18'})) # {'Name': 'John', 'Age': '18'}
 可以注意到, 将复杂数据类型转化为字符串时会保留其语法格式, 若要进行个细致的操作, 需要相应函数帮助, 比如`str.format()`, 它们提供了异常强大的转换功能.
 
 ### 4.2 特殊字符的转义处理
+所谓特殊字符, 有些字符是不显示的, 比如回车换行符, 有些是用来做特殊控制的, 比如单引号在代码中表示字符的开始或结束, 这些字符必须用可见的字符来表示, 但是可见字符已经表示了自身, 解决方案就是通过在普通字符前添加前缀, 实现对普通字符的转义, `\`被称为转义符.
+
+#### 4.2.1 ASCII码值转义
+`\yyy`和`\xyy`分别表示三位八进制数和二位十六进制数ascii码对应的字符, 8进制如果不够3位, 前面必须补`0`, 比如`099`
+```python
+str0 = "A"
+print(ord(str0[0]))
+print('0x%02x' % (ord(str0[0])))
+print('%o' % ord(str0[0]))
+```
+
+#### 4.2.2 Unicode码值转义
+在字符串中, 我们可以使用`\x0d`和`\r`表示回车符号, 那么对于中文字符来说, 也同样有两种表示方式:
+```python
+str0 = '\u4f60'
+str1 = '你'
+print(str0, str1)
+```
+`0x46f0`是中文字符你的Unicode码值, 可以采用`'\u'`前缀加Unicode码值的方式表示一个中文字符, 它和'你'是等价的. 注意Unicode码值和`UTF-8`编码的区别, 参考[常见的编码方式]()
+
+#### 4.2.3 引号转义
+对于字符串中的单双引号可以进行转义处理, 也可以互斥使用单双引号:
+```python
+str0 = '123"456'
+str1 = "123'456"
+str2 = """123'''456"""
+print(str0, str1, str2)
+```
+既有单引号又有双引号, 可以使用转义, 或者三引号处理.
+```python
+str0 = "123\"\'456"
+str1 = """123'''456"""
+```
+可以指定多个字符串, 字符串中间的空格被忽略
+```python
+str0 = 'spam' 'eggs'
+str1 = 'spam''eggs'
+print(str0, str1) #spameggs spameggs
+```
+
+#### 4.2.4 原生字符
+使用原生(**raw**)字符串输入标志`r`或`R`可以免除大量转义, 直接原样输出.
+```python
+str2 = r"123\"\'456"
+str3 = R"123\"\'456"
+print(str2, str3) #123\"\'456 123\"\'456
+```
+**注意:** 原生字符串必须保证代码行符合编码逻辑, 也即起止标志(引号)必须配对, 比如字符串`r"\"`是不能被解析的, 右斜杠和引号同时存在令解析器认为字符串没有结束符. 将提示"SyntaxError: EOL while scanning string"错误
+
+### 4.3 访问字符串中的值
+要理解下标和切片访问方式, 必须理解字符串的索引. 和C语言类似, 字符串中每一个字符都有一个唯一的自然数和它对应, 从`0`开始.
+
+#### 4.3.1 负数索引编号
+与C语言不通, Python语言提供了负数下标, 方便从字符串尾部进行访问.下标从`-1`向前依次递减.
+
+#### 4.3.2 下标直接访问
+```python
+str0 = 'Python'
+print(str0[0], str0[-1])
+```
+
+#### 4.3.3 切片取子字符串
+通过提供起止索引来访问子字符串的方式称为**切片**. 下标超出最大索引, 或者起始索引大于终止索引, 返回空字符串.
 
 
+切片操作支持指定步长, 格式为`[start:stop:step]`, 前两个索引和普通切片一样.
+```python
+str4 = '0123456789'
+print(str4[1:3]) # 12
+print(str4[1::2]) # 13579
+print(str4[3:]) # 3456789
+print(str4[3:-1]) # 345678
+print(str4[100:]) # 返回空字符串
+```
+切片操作的步长可以为负数, 通常用于翻转字符串, 此时如果不通过默认值start和stop则默认为尾部和头部索引:
+```python
+str5 = 'abcde'
+print(str5[::-1]) # edcba
+print(str5[::-2]) # eca
+```
+切片操作等价于:
+```python
+str5 = 'abcde'
+def doslice(instr, start, stop, step):
+    newstr = ''
 
+    for i in range(start, stop, step):
+        newstr += instr[i]
+    return newstr
+print(doslice(str5, 3, 0, -2))
+```
 
+#### 4.3.4 过滤特定的字符
+`filter(function or None, iterable) -> filter object`
 
+内建函数`filter()`可以对迭代数据类型执行特定的过滤操作. 返回迭代对象.
 
+取数字组成的字符串中的偶数字符, 并得到新字符串
+```python
+str4 = '0123456789'
+iterable = filter(lambda i: int(i) % 2 == 0, str4)
+print(''.join(iterable))
+```
 
+### 4.4 更新字符串中的值
+字符串不允许直接修改, 只能转换成其他类型更新后再转回字符串.
 
+#### 4.4.1 转换为列表再转回
+字符串转换为列表后, 每一个字符串称为列表中的一个元素, 此时通过索引就可以更新每一个字符, 然后在通过`join()`函数换回字符串.
+```python
+str5 = 'abcde'
+list0 = list(str5)
+print(list0)
+list0[0] = 'A'
+print(list0)
+str5 = ''.join(list0)
+print(str5)
+# ['a', 'b', 'c', 'd', 'e']
+# ['A', 'b', 'c', 'd', 'e']
+# Abcde
+```
 
+### 4.5 字符串格式化
+更多格式化输出请参考[格式化输出]()
 
+#### 4.5.1 常用格式化符号
+| 符号   | 描述                    |
+|------|-----------------------|
+| `%c` | 格式化字符及其ASCII码         |
+| `%s` | 格式化字符串                |
+| `%d` | 格式化整数                 |
+| `%u` | 格式化无符号整型              |
+| `%o` | 格式化无符号八进制数            |
+| `%x` | 格式化无符号十六进制数           |
+| `%X` | 格式化无符号十六进制数(大写)       |
+| `%f` | 格式化浮点数字, 可指定小数点后的精度   |
+| `%e` | 用科学计数法格式化浮点数          |
+| `%E` | 作用同`%e`, 用科学计数法格式化浮点数 |
+| `%g` | `%d`和`%e`的简写          |
+| `%G` | `%d`和`%E`的简写          |
+| `%`  | 直接输出`%`               |
+
+### 4.5.2 转换符格式化
+转换符格式化(conversion specifier)可以引用字典变量. 转换符的格式为:`%(mapping_key)flags`, `mapping_key`指明引用变量的名称, `flags`指明转换格式.
+```python
+print('%(language)s has %(number)01d quote types.' % { 'language': 'Python', 'number': 2 })
+```
+更复杂的格式化使用`str.format()`更便捷.
+
+#### 4.5.3 format函数格式化
+Python2.6开始, 新增了一种格式化字符串的函数`str.format()`, 它增强了字符串格式化的功能. 基本语法是通过`{}`和`:`来代替以前`%`. `format`函数可以接收不限个参数, 未知可以不按顺序.
+
+##### 4.5.3.1 为格式化参数指定顺序
+```python
+print("{} {}".format("abc", "123"))
+print("{0} {1}".format("abc", "123"))
+print("{1} {0} {1}".format("abc", "123"))
+```
+
+##### 4.5.3.2 通过名称或索引指定参数
+直接通过名称引用, 或者可以通过字典和列表传递参数.
+
+```python
+print("name: {name}, age: {age}".format(name="John", age=18))
+man = {'name': 'John', 'age': 18}
+print("name: {name}, age: {age}".format(**man))
+man_list = ['John', 18]
+print("name: {0[0]}, age: {0[1]}".format(man_list))
+```
+
+##### 4.5.3.3 直接传递对象
+```python
+class testobj(object):
+    def __init__(self, value):
+        self.value = value
+
+testval = testobj(100)
+print('value: {0.value}'.format(testval))
+```
+
+##### 4.5.3.4 数字格式化
+`str.format()`提供了强大的数字格式化方法.
+- `^`,`<`,`>`分别是句号左对齐,右对齐, 后面带宽度
+- `:`好后面带填充的字符, 只能是一个字符, 不指定则默认用空格填充
+- `+`表示在正数前显示`+`号, 负数前显示`-`,(空格)表示在正数前加空格
+- `b`、`d`、`o`、`x/X`分别表示二进制、十进制、八进制、十六进制
+
+| 数字         | 格式        | 输出        | 描述                      |
+|------------|-----------|-----------|-------------------------|
+| 3.1415926  | `{:.2f}`  | 3.14      | 保留小数点后两位                |
+| 3.1415926  | `{:+.2f}` | +3.14     | 带符号保留小数点后两位             |
+| -1         | `{+.2f}`  | -1.00     | 带符号保留小数点后两位             |
+| 2.71828    | `{:.0f}`  | 3         | 不带小数, `<=0.5`舍, `>0.5`入 |
+| 5          | `{:0>2d}` | 05        | 数字补零(填充左边, 宽度为2         |
+| 5          | `{:x<4d}` | 5xxx      | 数字补x(填充右边, 宽度为4         |
+| 10         | `{:x<4d}` | 10xx      | 数字补x(填充右边, 宽度为4)        |
+| 1000000    | `{:,}`    | 1,000,000 | 以逗号分割的数字格式              |
+| 0.25       | `{:.2%}`  | 25.00%    | 百分比格式                   |
+| 1000000000 | `{:.2e}`  | 1.00e+09  | 指数记发                    |
+| 10         | `{:10d}`  | 13        | 右对齐(默认, 宽度10)           |
+| 10         | `{:<10d}` | 13        | 左对齐(宽度为10)              |
+| 10         | `{:^10d}` | 13        | 中间对齐(宽度为10)             |
+针对不同的进制, `str.format()`提供了以下格式化方法:
+
+```python
+print('{:b}'.format(11))  # 二进制 1011
+print('0b{:0>5b}'.format(11)) # 二进制, 数字补零(填充左边, 宽度为5) 0b01011
+print('{:d}'.format(11))     # 十进制
+print('{:o}'.format(11))     # 八进制
+print('{:x}'.format(11))     # 16进制
+print('{:#x}'.format(11))    # 16进制带0x前缀
+print('{:#X}'.format(11))    # 16进制带0X前缀
+```
+
+##### 4.5.3.5 转义大括号
+由于大括号在`format()`函数作为参数引用的特殊用途, 如果要在字符串中输出大括号, 则使用大括号`{}`来转义大括号.
+
+```python
+print("{0} is {{0}}".format('value'))
+print("{0} is ".format('value') + '{0}')
+```
+应采用字符串连接的方式来组合含有大括号的字符串, 这样更清晰.
+
+### 4.6 字符串查找和统计
+#### 4.6.1 判断字符串存在
+使用`in`和`not in`判定字符串是否存在
+```python
+str4 = '0123456789'
+print('123' in str4) # True
+print('1232' in str4) # False
+if '123' in str4:
+    print('123')
+
+if '1232' not in str4:
+    print('1232')
+```
+
+#### 4.6.2 指定范围查找字符串
+本小结主要针对`find()`、`index()`和`rindex()`函数的使用.
+
+- `S.find(sub, [,start, [,end]]) -> int`
+
+    `find()`在`[start, end)`索引范围内查找`sub`字符串, 如果存在返回第一个的索引, 否则返回`-1`
+- `S.index(sub, [,start [, end]]) -> int`
+
+    `index()`函数与`find()`函数非常类似, 找不到时会抛出ValueError异常
+- `S.rindex(sub [,start [,end]]) -> int`
+
+    `rindex()`与`index()`作用类似, 从右侧开始查找
+```python
+str4 = '0123456789'
+
+print(str4.find('78')) # 7
+print(str4.find('1232')) # -1
+```
+
+#### 4.6.3 字符是否以子串开始或结束
+- `S.endswith(suffix [,start [, end]]) -> bool`
+    `endswith()`函数返回`True`或`False`, start和end指定查找返回, 可选
+- `S.startwith(prefix [,start [, end]]) -> bool`
+    与`endswith()`类似, 判断字符串是否以`prefix`子串开始
+
+```python
+str4 = '0123456789'
+print(str4.endswith('89', 0, 9))
+print(str4.startswith('01'))
+```
+
+#### 4.6.4 字符串最大最小值
+`max()`和`min()`用于获取字符串中的最大ASCII码和最小ASCII码的字符.
+```python
+str4 = '0123456789'
+
+print(min(str4), max(str4))
+```
+
+#### 4.6.5 统计字符串出现的次数
+`S.count(sub, [, start [, end]]) -> int`
+
+`count()`返回str在string里面出现的次数, 如果start或者end指定则返回指定范围内str出现的次数
+
+```python
+str4 = '0123456789'
+print(str4.count('0', 0, 9))
+print(str4.count('0', 1, 9))
+print(str4.count('abc'))
+```
+
+#### 4.6.6 统计字符串不同字符数
+`set()`函数可以对字符串进行归一化处理. 需要注意的, `set()`函数返回的字符集合是无序的.
+
+```python
+str4 = '0123456789'
+
+print(set(str4))
+
+for i in set(str4):
+    print("%s count %d" %(i, str4.count(i)))
+```
+
+### 4.7 字符串大小写转换
+#### 4.7.1 首字母转化为大写
+`S.capitalize() -> string`
+
+`capitalize()`将字符串的第一个字母变成大写, 其他字母变小写.
+
+#### 4.7.2 转为大写或小写
+`S.upper() -> string`
+
+`S.lower() -> string`
+
+`upper()`和`lower()`分别对字符串进行大写和小写转换.
+
+```python
+str0 = 'Hello World'
+print(str0.upper())
+print(str0.lower())
+```
+
+#### 4.7.3 大小写反转
+`S.swapcase() -> string`
+
+大写变小写, 小写变大写, 非字符字符保持不变
+
+```python
+str0 = 'Hello World'
+print(str0.swapcase())
+```
+
+#### 4.7.4 标题化字符串
+`S.title() -> string`
+
+`title()`返回'标题化'的字符串, 即所有单词都是以大写开始, 其余字母均为小写.
+
+```python
+str0 = 'HI world'
+print(str0.title())
+```
+
+### 4.8 字符串对齐和填充
+关于字符串对齐参考 [打印输出到文件]()
+
+`S.zfill(width) -> string`
+
+`zfill()`函数返回指定长度的字符串, 原字符串右对齐, 前面填充字符`0`
+
+```python
+str0 = 'Hello world'
+print(str0.zfill(20))
+print(str0.rjust(30, '0'))
+```
+由示例可以得知`zfill(width)`和`rjust(width, '0')`是等价的.
+
+### 4.9 字符串strip和分割
+#### 4.9.1 strip字符串
+`S.strip([chars]) -> string or unicode`
+
+`strip()`函数默认将字符串头部和尾部的空白符(whitespace)移除. **注意:** 该函数不删除中间部分的空白符.
+
+也可以通过chars参数指定出的字符集.
+
+**PoSIX**标准给出空白符包括如下几种:
+
+| 符号      | 描述                    |
+|---------|-----------------------|
+| `space` | 空格                    |
+| `\f`    | 换页(form feed)         |
+| `\n`    | 换行(newline)           |
+| `\r`    | 回车(carriage return)   |
+| `\t`    | 水平制表符(horizontal tab) |
+| `\v`    | 垂直制表符(vertical tab)   |
+
+```python
+str0 = "  hello  \r\n\t\v\f"
+str1 = "00000hell10o10000"
+
+print(str0.strip())  # 去除首尾空白符号
+print(str1.strip('01')) # 去除首尾符号 1 和 0
+```
+
+如果参数chars为unicode类型, 则首先将要处理的字符串S转换为unicode类型
+
+`S.lstrip([chars]) -> string or unicode`
+
+`S.rstrip([chars]) -> string or unicode`
+
+`lstrip()`和`rstrip()`方法和`strip()`类似, 只是只去除头部或者尾部的空白符, 或指定的字符集中的字符.
+
+#### 4.9.2 单次分割
+`S.partition(sep) -> (head, sep, tail)`
+
+`partition()方法用来根据指定的分隔符将字符串进行分割, sep若包含多个字符, 则作为一个整体分割.`
+
+`rpatition()`方法从右侧开始分割.
+
+如果字符串包含指定的分隔符, 则返回一个3元的元组, 第一个为分隔符左边的子串, 第二个为分隔符本身, 第三个为分隔符右边的子串.
+
+```python
+str0 = "www.google.com"
+print(str0.partition('.')) # ('www', '.', 'google.com')
+str0.rpartition('.') # ('www.google', '.', 'com')
+str0.partition('1') # ('', '', 'www.google.com')
+str0.partition('google') # ('www.','google', '.com')
+```
+
+#### 4.9.3 字符串切片
+`S.split([sep [, maxsplit]]) -> list of strings`
+
+`split()`通过指定分隔符对字符串进行切片, 默认使用所有空白符, 如果参数maxsplit有指定值, 则进分割maxsplit个字字符串.
+
+**注意:** `split()`返回的是一个字符串列表.
+
+```python
+str6 = "abcdef \n12345 \nxyz"
+print(str6.split()) # ['abcdef', '12345', 'xyz']
+print(str6.split(' ', 1)) # ['abcdef', '\n12345 \nxyz']
+print(str6.split('A')) # ['abcdef \n12345 \nxyz']
+```
+
+#### 4.9.4 按换行符切割
+`S.splitlines(keepends=False) -> list of strings`
+
+`splitlines()`按照换行符(`\r`、`\r\n`、`\n`)分割, 返回一个包含各行作为元素的列表, 如果参数keepends位`False`, 不包含换行符, 如果为`True`, 则保留换行符.
+```python
+str7 = 'str1\n\nstr2\n\rstr3\rstr4\r\n\r\n'
+print(str7.splitlines()) # ['str1', '', 'str2', '', 'str3', 'str4', '']
+print(str7.splitlines(True)) # ['str1\n', '\n', 'str2\n', '\r', 'str3\r', 'str4\r\n', '\r\n']
+```
+
+### 4.10 字符串替换
+#### 4.10.1 制表符替换为空格
+`S.expandtabs(tabsize) -> string`
+
+`expandtabs()`方法把字符串中的水平制表符(`\t`)转为空格, 默认的空格数是8.
+```python
+str8 = 's\te'
+print(str8) # s	e
+print(str8.expandtabs()) # s       e
+print(str8.expandtabs(4)) # s   e
+```
+
+#### 4.10.2 新子串替换旧子串
+`S.replace(old, new [, count]) -> string`
+
+`replace()`方法把字符串中的旧字符串old替换成新字符串new, 如果指定第三个参数count, 则替换不超过count次.
+```python
+str9 = 'old old old old old'
+print(str9.replace('old', 'new')) # new new new new new
+print(str9.replace('old', 'new', 3)) # new new new old old
+```
+
+`replace()`方法只能把参数作为一个整体进行替换, 如果我们要替换字符串中的过个字符, 可以借助`re`正则表达式模块.
+
+```python
+import re
+
+str10 = '\r\nhello 1213 \nworld'
+print(re.sub('[\r\n]', '', str10)) # hello 1213 world
+```
+
+#### 4.10.3 字符映射替换
+```shell
+S.translate(table [, deleterchars]) -> string [Python 2.x]
+S.translate(table) -> str [Python 3.x]
+```
+`translate()`函数根据参数table给出的转换表(它是一个长度为256的字符串)转换字符串的单个字符, 要过滤掉的字符通过deletechars参数传入
+```python
+# 引用 maketrans 函数生成转换表
+from string import maketrans
+
+# intab 和 outtab 长度必须相同
+intab  = "aeiou+"
+outtab = "12345-"
+trantab = maketrans(intab, outtab)
+
+str0 = "aeiou+r1m"
+# print(str0.translate(trantab, "rm"))
+
+# Python 3.x 版本不支持 deletechars
+print(str0.translate(trantab))
+```
+
+#### 4.10.4 字符串映射替换
+为了解决`translate()`方法单字符映射的限制, 使用`re`功能可以无副作用的替换多个字符串.
+```python
+# count 表示替换的次数，默认替换所有
+def replace_strs(instr, map_dict, count=0):
+    import re
+
+    # escape all key strings
+    re_dict = dict((re.escape(i), j) for i, j in map_dict.items())
+    pattern = re.compile('|'.join(re_dict.keys()))
+
+    return pattern.sub(lambda x: re_dict[re.escape(x.group(0))], instr, count)
+
+str0 = "This and That."
+map_dict = {'This' : 'That', 'That' : 'This'}
+
+print(replace_strs(str0, map_dict))
+
+# 注意重复调用 replace() 方法带来的副作用
+newstr = str0.replace('This', 'That').replace('That', 'This')
+print(newstr)
+```
+
+### 4.11 字符串排序
+对于一个字符串排序, 通常有两种方式:
+- 转换为列表, 使用列表的`sort()`方法.
+- 使用内建函数`sorted()`, 它可以为任何迭代对象进行排序, 还可以指定key来忽略大小写排序.参考[sorted]().
+
+这两种方式都需要把排序后的列表转换
+```python
+str11 = 'hello'
+str_list = list(str11)
+str_list.sort()
+print(''.join(str_list)) # ehllo
+```
+
+### 4.12 字符串合并
+如同`int`类一样, 字符串重载了 `+ `运算符, 使用`+`运算符合并两个子串是最简洁的.
+
+`S.join(iterable) -> str`
+
+`join()`方法用于将可迭代类型中的元素以指定的字符连接生成一个新的字符串.
+```python
+str12 = 'ABCD'
+tuple0 = ('a', 'b', 'c')
+list1 = ['1', '2', '3']
+print('--'.join(str12)) # A--B--C--D
+print('--'.join(tuple0)) # a--b--c
+print('--'.join(list1)) # 1--2--3
+print(''.join(list1)) # 123
+```
+
+使用`join()`函数打印乘法表:
+```python
+print('\n'.join(' '.join(['%s * %s = %-3s' % (y, x, x*y) for y in range(1, x+1)]) for x in range(1, 10)))
+```
+
+### 4.13 字符串特征类型判定
+判定函数均返回布尔值. 非空表示如果字符串为空字符则返回`False`
+
+为何更好的理解字符类型特征, 请参考[Unicode的字符集分类](https://www.fileformat.info/info/unicode/category/index.htm)
+
+| 方法                     | 描述                                                                                                                                               |
+|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `string.isalnum()`     | - 非空, 全为字母或者数字(alphanumeric character)<br/> - 等价于`isalpha()` or `isdecimal()` or `isnumeric()`                                                   |
+| `string.isalpha()`     | - 非空, 全为字母(alphabetic character)<br/> - Unicode “Letter”字符集，包含 Lm, Lt, Lu, Ll 和 Lo                                                               |
+| `string.isdigit()`     | - 非空, 全为十进制数字(0-9)<br/> - Unicode “Decimal, Digit”字符集 Nd                                                                                         |
+| `string.isspace()`     | - 非空, 全为空白符(whitespace), 参考[strip字符串]()<br/> - Unicode “Separator” 字符集，包含 ZI, Zp 和 Zs                                                            |
+| `string.istitle()`     | - 非空，是否为标题化字符串，至少包含一个区分大小写的字符<br/> - 区分大小写的字符称为 cased characters<br/> - 包含 Lu (Letter, uppercase) Ll (Letter, lowercase)和Lt (Letter, titlecase). |
+| `string.isupper()`     | 非空，至少包含一个区分大小写的字符，且全为大写                                                                                                                          |
+| `string.lower()`       | 非空，至少包含一个区分大小写的字符，且全为小写                                                                                                                          |
+| `ustring.isnumeric()`  | - 非空，全为数字，只存在于unicode对象<br/> - Unicode “Digit, Decimal, Numeric”字符集, 包含 Nd, Ni 和 No                                                              |
+| `ustring.isdecimal()`  | 非空，全为数字，只存在于unicode对象，包含 Nd                                                                                                                      |
+| `string.isascii()`     | 空，或者全为ASCII码字符，U+0000-U+007F 3.7版本引入                                                                                                             |
+| `string.isprintable()` | - 空，或全为可打印字符<br/> - 不可打印字符 Unicode “Separator” 字符集，包含 ZI, Zp 和 Zs<br/> - 例外：空格是可打印字符                                                             |
+
+### 4.14 字符编解码
+世界上存在着各种各样的编码, 有数学符号, 有语言符号, 为了在计算机中统一表达, 制定了统一编码规范, 被称为Unicode编码. 它让计算机具有了跨语言、跨平台的文本和符号的处理能力.
+
+[细说编码](https://blog.csdn.net/zhouguoqionghai/article/details/79733525)和[彻底理解字符编码](https://www.cnblogs.com/leesf456/p/5317574.html)是两篇了解字符编码比较深入浅出的文章. 这里只做简单的总结性介绍.
+
+#### 4.14.1 常见的编码方式
+- ASCII编码: 美国指定, 单字节棉麻, 只用了8位的后7位, 第一位总是0, 一共128个字节
+- ISO-8859-1(Latin1): ISO组织制定, 单字节编码, 扩展了Ascii编码的最高位, 一共256字节
+- GB2312: 分区编码, 针对简体中文, 2字节编码, 高字节表示区, 低字节表示位, 共收录6763个中文字符
+- BIG5(cp950)：针对繁体中文，2字节编码，共收录13060个中文字符
+- GBK(cp936)：“国标”、“扩展”汉语拼音的第一个字母缩写，2字节编码。扩展了GB2312编码，完全兼容GB2312，包含繁体字符，但是不兼容BIG5 (所以BIG5编码的文档采用GBK打开是乱码，GB2312采用GBK打开可以正常浏览)
+- Unicode(统一码/万国码/单一码)：全球通用的单一字符集，包含人类迄今使用的所有字符，但只规定了符号的编码值，没有规定计算机如何编码和存储，针对Unicode有两种编码方案。
+
+### 4.15 字节序列化 Bytes
+Python3中明确区分了字符串类型(`str`)和字节序列类型(`bytes`), 这成为字节流. 内存, 磁盘中均是以字节流的形式保存数据, 它是一个一个的字节(byte, 8bit)顺序构成, 然而人们并不习惯直接使用字节, 即读不懂, 操作起来也很麻烦, 人们容易看懂的是字符串.
+
+所以字符串和字节流需要进行转化, 字节流转换为人们可以读懂得过程叫做解码, 于此相反, 将字符串转换为字节流的过程叫做编码. 我们已经了解对于值在0-128之间的字符, 可以使用ASCII编码, 而对于多字节的中文, 则需要GBK或者utf-8编码.
+
+当我们读取文件时, 如果打开模式是文本模式, 就会自动进行解码的转换, 当我们写出字符串时, 也会进行编码转码, 不需要显式的进行编码, 如果要进行网络传输, 那么就要手动进行编解码.
+
+Python对于bytes类型的数据用带`b`前缀加字符串(如果字节值在ascii码值内则显示对应的ascii字符, 否则显示\x表示的16进制字节值)表示.
+
+- 我们可以通过**b'xxx'**显式定义一个bytes类型对象, 例如:
+```python
+bytes0 = b'abc'
+print(type(bytes0).__name__) # bytes
+```
+- 同样也可以使用字符串对象的encode函数得到bytes对象:
+```python
+print('abc'.encode('utf-8')) # b'abc'
+```
+- 也可以通过bytes类名把字符串类型转换为bytes对象:
+```python
+bytes1 = bytes('abc', 'utf-8')
+print(type(bytes1).__name__, bytes1) # bytes b'abc'
+```
+`utf-8`是一种适用于全世界各种语言文字符号进行编码的编码格式. 默认在编写Python代码时也使用该编码格式. 可以看到一个中文字符, 在`utf-8`中通常使用3个字节进行编码
+
+字节流类型具有只读属性, 字节流中的每个字节都是int型, 可以通过下标访问, 但不可更改字节值
+
+#### 4.15.1 bytes
+`bytes()`类支持一下参数来实例化一个字节流对象:
+1. 不提供参数, 生成一个空对象, 值为`b''`
+2. 字符串参数, 必须提供编码参数encoding, 此时可以传入`errors='ignore'`忽略错误的字节.
+3. 正整数n, 返回含n个`\x00`字节的对象
+4. `bytearray`对象, 将可读写的bytearray对象转换为只读的bytes对象
+5. 整数型可迭代对象, 比如`[1, 2, 3]`, 每个元素必须在\[0-255\]之间.
+```python
+print(bytes())  # 等价于 bytes(0) b''
+
+print('string'.encode('utf-8'))
+print(bytes('string', 'utf-8'))
+
+print(bytes(3))
+
+print(bytes(bytearray([1, 2, 3])))
+
+print(bytes([1, 2, 3]))
+```
+bytes对象具有`decode()`方法, 将自己流转换回字符串:
+```python
+print('中文'.encode('utf-8').decode('utf-8'))
+```
+
+#### 4.15.2 bytearray
+`bytearray()`创建一个可读可写的字节流对象. 其他参数和属性与bytes()一致.
+```python
+ba = bytearray(3)
+print(ba)
+ba[0] = 256 # 2 ** 8
+print(ba)
+```
+
+#### 4.15.3 hex
+`bytes.hex()`方法可以以16进制字符串方式显示字节流对象:
+```python
+bytes2 = bytes('中文', 'utf-8')
+print(bytes2) # b'\xe4\xb8\xad\xe6\x96\x87'
+print(bytes2.hex()) # e4b8ade69687
+```
+当然使用`bytes.formathex()`方法也可以将一个16进制字符串转换为bytes对象:
+```python
+int0 = 0xefefefef
+hexstr = hex(int0)
+print(hexstr) # 0xefefefef
+bytes3 = bytes.fromhex(hexstr[2:])
+print(bytes3) # b'\xef\xef\xef\xef'
+```
+#### 4.15.4 bytes和字符串转换
+str 对象编码后变为 bytes 对象，bytes 对象解码后对应 str 对象
+```python
+bytes0 = bytes('中文', 'utf-8')
+bytes1 = '中文'.encode('utf-8')
+print(bytes0, bytes1)
+
+str0 = bytes0.decode('utf-8')
+str1 = str(bytes1, 'utf-8')
+print(str0, str1)
+```
+
+#### 4.15.5 类字符串操作
+字节流对象类似str, 所以定义了很多类似字符串的放的, 比如转换其中ascii字符的大小写, 查找等
+```python
+bytes0 = bytes('string', encoding='utf-8')
+print(bytes0.find(b't')) # 参数必须也是 bytes 类型
+print(bytes0.swapcase())
+```
